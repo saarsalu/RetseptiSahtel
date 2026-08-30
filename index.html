@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RetseptiSahtel</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2e7d32">
+  <style>
+    :root {
+      --bg: #f4f6f0;
+      --card: #ffffff;
+      --primary: #2e7d32;
+      --primary-hover: #1b5e20;
+      --text: #1c2518;
+      --muted: #667060;
+      --border: #e0e6db;
+      --danger: #d32f2f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.3rem; font-weight: 700; }
+
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 100;
+    }
+    .nav-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 0.75rem; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; cursor: pointer; flex: 1;
+    }
+    .nav-btn.active { color: var(--primary); font-weight: bold; }
+    .nav-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    .btn {
+      background: var(--primary); color: white; border: none;
+      padding: 12px 20px; border-radius: 8px; font-weight: 600;
+      width: 100%; cursor: pointer; font-size: 1rem; text-align: center;
+    }
+    .btn:active { background: var(--primary-hover); }
+    .btn-danger { background: var(--danger); }
+    .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+
+    input, textarea {
+      width: 100%; padding: 12px; border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 12px; font-size: 1rem;
+      background: #fafafa;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .recipe-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px; background: var(--card); border-radius: 10px;
+      margin-bottom: 10px; border: 1px solid var(--border); cursor: pointer;
+    }
+    .recipe-item h3 { font-size: 1.05rem; }
+    .recipe-item span { color: var(--muted); font-size: 0.85rem; }
+
+    .servings-control {
+      display: flex; align-items: center; gap: 12px;
+      margin: 16px 0; background: #eef3ec; padding: 10px 16px;
+      border-radius: 8px; justify-content: space-between;
+    }
+    .servings-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: none; background: var(--primary); color: white;
+      font-size: 1.2rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+    }
+
+    .ingredient-list { list-style: none; margin-top: 12px; }
+    .ingredient-list li {
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between;
+    }
+    .ingredient-list li:last-child { border-bottom: none; }
+    .ing-name { font-weight: 500; }
+    .ing-qty { color: var(--primary); font-weight: 700; }
+
+    .banner {
+      background: #eef3ec; border-left: 4px solid var(--primary);
+      padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 id="header-title">RetseptiSahtel</h1>
+  </header>
+
+  <div class="container">
+
+    <!-- VAADE 1: Minu retseptid -->
+    <div id="view-list" class="view active">
+      <input type="text" id="search-input" placeholder="Otsi retsepti..." oninput="filtreriRetseptid()">
+      <div id="recipe-container"></div>
+    </div>
+
+    <!-- VAADE 2: Lisa / Impordi retsept -->
+    <div id="view-add" class="view">
+      <div class="card">
+        <h3>Kleebi või jaga retsept</h3>
+        <p style="color: var(--muted); font-size: 0.85rem; margin: 6px 0 12px;">
+          Kleebi siia tekst Facebookist või muust allikast.
+        </p>
+        <input type="text" id="input-title" placeholder="Retsepti pealkiri (nt Šokolaadikook)">
+        <textarea id="input-text" placeholder="Kleebi retsepti tekst (nt:&#10;200 g jahu&#10;3 tk muna&#10;100 ml piima)"></textarea>
+        <button class="btn" onclick="töötleJaSalvesta()">Salvesta retsept</button>
+      </div>
+    </div>
+
+    <!-- VAADE 3: Retsepti detailvaade -->
+    <div id="view-detail" class="view">
+      <button class="btn btn-outline" style="margin-bottom: 12px;" onclick="avaVaade('list')">← Tagasi nimekirja</button>
+      
+      <div class="card">
+        <h2 id="detail-title" style="margin-bottom: 8px;"></h2>
+        
+        <div class="servings-control">
+          <span>Portsjonid / Kogus:</span>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="servings-btn" onclick="muudaPortsjoneid(-1)">-</button>
+            <strong id="detail-servings" style="font-size: 1.1rem;">4</strong>
+            <button class="servings-btn" onclick="muudaPortsjoneid(1)">+</button>
+          </div>
+        </div>
+
+        <h4 style="margin-top: 16px;">Koostisosad:</h4>
+        <ul id="detail-ingredients" class="ingredient-list"></ul>
+
+        <h4 style="margin-top: 20px;">Juhend / Tekst:</h4>
+        <p id="detail-instructions" style="white-space: pre-wrap; margin-top: 8px; color: #444; line-height: 1.4;"></p>
+
+        <button class="btn btn-danger" style="margin-top: 24px;" onclick="kustutaPraeguneRetsept()">Kustuta retsept</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Alumine navigatsioon -->
+  <nav class="nav-bar">
+    <button class="nav-btn active" id="nav-list" onclick="avaVaade('list')">
+      <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+      Retseptid
+    </button>
+    <button class="nav-btn" id="nav-add" onclick="avaVaade('add')">
+      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Lisa uus
+    </button>
+  </nav>
+
+  <script>
+    // Andmete struktuur
+    let retseptid = JSON.parse(localStorage.getItem('retseptid') || '[]');
+    let valitudRetsept = null;
+    let hetkePortsjonid = 4;
+
+    // Registreeri Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
+
+    // Lehe laadimisel kontrolli, kas tulti "Jaga" nupu kaudu
+    window.addEventListener('DOMContentLoaded', () => {
+      kontrolliJagatudSisu();
+      kuvaRetseptid();
+    });
+
+    function avaVaade(vaade) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => v.classList.remove('active'));
+      
+      document.getElementById('view-' + vaade).classList.add('active');
+      const navBtn = document.getElementById('nav-' + vaade);
+      if(navBtn) navBtn.classList.add('active');
+
+      if (vaade === 'list') kuvaRetseptid();
+    }
+
+    // Parsija: eraldab tekstist kogused, ühikud ja nimetused
+    function parseeriKoostisosad(tekst) {
+      const read = tekst.split('\n');
+      const regex = /^([\d.,]+)\s*(g|kg|ml|l|tl|sl|spl|tk|klaas|klaasi)?\.?\s+(.+)$/i;
+      const koostisosad = [];
+
+      for (let rida of read) {
+        rida = rida.trim();
+        if (!rida) continue;
+        const match = rida.match(regex);
+        if (match) {
+          koostisosad.push({
+            amount: parseFloat(match[1].replace(',', '.')),
+            unit: match[2] || '',
+            name: match[3].trim()
+          });
+        }
+      }
+      return koostisosad;
+    }
+
+    function töötleJaSalvesta() {
+      const pealkiri = document.getElementById('input-title').value.trim() || 'Nimetu retsept';
+      const tekst = document.getElementById('input-text').value.trim();
+
+      if (!tekst) {
+        alert('Palun sisesta või kleebi retsepti tekst!');
+        return;
+      }
+
+      const koostisosad = parseeriKoostisosad(tekst);
+
+      const uusRetsept = {
+        id: Date.now(),
+        title: pealkiri,
+        rawText: tekst,
+        baseServings: 4,
+        ingredients: koostisosad
+      };
+
+      retseptid.unshift(uusRetsept);
+      salvestaAndmed();
+
+      // Puhasta vorm
+      document.getElementById('input-title').value = '';
+      document.getElementById('input-text').value = '';
+
+      avaVaade('list');
+    }
+
+    function kuvaRetseptid(filtriTekst = '') {
+      const container = document.getElementById('recipe-container');
+      container.innerHTML = '';
+
+      const filtreeritud = retseptid.filter(r => 
+        r.title.toLowerCase().includes(filtriTekst.toLowerCase())
+      );
+
+      if (filtreeritud.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--muted); margin-top:40px;">Retsepte ei leitud. Lisa uus!</p>';
+        return;
+      }
+
+      filtreeritud.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'recipe-item';
+        item.innerHTML = `
+          <div>
+            <h3>${põgeneHTML(r.title)}</h3>
+            <span>${r.ingredients.length} koostisosa tuvastatud</span>
+          </div>
+          <span style="color:var(--primary); font-weight:bold;">→</span>
+        `;
+        item.onclick = () => avaDetailid(r.id);
+        container.appendChild(item);
+      });
+    }
+
+    function filtreriRetseptid() {
+      const val = document.getElementById('search-input').value;
+      kuvaRetseptid(val);
+    }
+
+    function avaDetailid(id) {
+      valitudRetsept = retseptid.find(r => r.id === id);
+      if (!valitudRetsept) return;
+
+      hetkePortsjonid = valitudRetsept.baseServings || 4;
+
+      document.getElementById('detail-title').innerText = valitudRetsept.title;
+      uuendaDetailidView();
+
+      avaVaade('detail');
+    }
+
+    function muudaPortsjoneid(delta) {
+      if (hetkePortsjonid + delta < 1) return;
+      hetkePortsjonid += delta;
+      uuendaDetailidView();
+    }
+
+    function uuendaDetailidView() {
+      document.getElementById('detail-servings').innerText = hetkePortsjonid;
+
+      const base = valitudRetsept.baseServings || 4;
+      const kordaja = hetkePortsjonid / base;
+
+      const listEl = document.getElementById('detail-ingredients');
+      listEl.innerHTML = '';
+
+      if (valitudRetsept.ingredients && valitudRetsept.ingredients.length > 0) {
+        valitudRetsept.ingredients.forEach(ing => {
+          const li = document.createElement('li');
+          const arv = Math.round((ing.amount * kordaja) * 10) / 10;
+          li.innerHTML = `
+            <span class="ing-name">${põgeneHTML(ing.name)}</span>
+            <span class="ing-qty">${arv} ${ing.unit}</span>
+          `;
+          listEl.appendChild(li);
+        });
+      } else {
+        listEl.innerHTML = '<li style="color:var(--muted);">Automaatselt skaalautuvaid koostisosi ei tuvastatud. Vaata täisteksti allpool.</li>';
+      }
+
+      document.getElementById('detail-instructions').innerText = valitudRetsept.rawText;
+    }
+
+    function kustutaPraeguneRetsept() {
+      if (!valitudRetsept) return;
+      if (confirm('Kas oled kindel, et soovid selle retsepti kustutada?')) {
+        retseptid = retseptid.filter(r => r.id !== valitudRetsept.id);
+        salvestaAndmed();
+        avaVaade('list');
+      }
+    }
+
+    function salvestaAndmed() {
+      localStorage.setItem('retseptid', JSON.stringify(retseptid));
+    }
+
+    // Android "Share Target" vastuvõtt URL parameetritest
+    function kontrolliJagatudSisu() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedTitle = urlParams.get('title') || urlParams.get('name') || '';
+      const sharedText = urlParams.get('text') || '';
+      const sharedUrl = urlParams.get('url') || '';
+
+      if (sharedText || sharedUrl || sharedTitle) {
+        avaVaade('add');
+        
+        let kogunemudTekst = sharedText;
+        if (sharedUrl && !kogunemudTekst.includes(sharedUrl)) {
+          kogunemudTekst += '\n' + sharedUrl;
+        }
+
+        document.getElementById('input-title').value = sharedTitle || 'Jagatud retsept';
+        document.getElementById('input-text').value = kogunemudTekst;
+
+        // Puhasta URL parameetritest
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    function põgeneHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+  </script>
+</body>
+</html>
